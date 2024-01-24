@@ -13,7 +13,6 @@ namespace App;
  */
 abstract class Router
 {
-    
     public static function routeRequest()
     {
         try {
@@ -23,21 +22,13 @@ abstract class Router
                 case '/developer':
                     $endpoint = new EndpointController\Developer();
                     break;
-                case 'countries':
-                case '/countries':
-                    $endpoint = new EndpointController\Country();
+                case 'post':
+                case '/post':
+                    $endpoint = new EndpointController\Post();
                     break;
-                case 'previews':
-                case '/previews':
-                    $endpoint = new EndpointController\Preview();
-                    break;
-                case 'author-and-affiliations':
-                case '/author-and-affiliations':
-                    $endpoint = new EndpointController\AuthorAndAffiliation();
-                    break;
-                case 'contents':
-                case '/contents':
-                    $endpoint = new EndpointController\Content();
+                case 'user':
+                case '/user':
+                    $endpoint = new EndpointController\User();
                     break;
                 case 'token':
                 case '/token':
@@ -47,17 +38,17 @@ abstract class Router
                 case '/notes':
                     $endpoint = new EndpointController\Note();
                     break;
-                case 'awards':
-                case '/awards':
-                    $endpoint = new EndpointController\Award();
-                    break;
-                case 'types':
-                case '/types':
-                    $endpoint = new EndpointController\Type();
-                    break;
                 case 'register':
                 case '/register':
                     $endpoint = new EndpointController\Register();
+                    break;
+                case 'profile':
+                case '/profile':
+                    $endpoint = new EndpointController\Profile();
+                    break;
+                case 'requesthandler':
+                case '/requesthandler':
+                    $endpoint = new EndpointController\Requesthandler();
                     break;
                 default:
                     throw new ClientError(404, 'check your url and try again');
