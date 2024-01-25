@@ -5,10 +5,20 @@ namespace App\EndpointController;
 /**
  * Class Post
  * 
- * @package App\EndpointController
  * This class is responsible for handling the requests to the post endpoint.
  * It can handle GET, POST, PUT and DELETE requests.
  * 
+ * Parameters: should be passed as JSON in the body of the HTTP request
+ * 
+ * HTTP Request Methods:
+ * GET:    Get a post by postID, userID, both or no parameters for all posts
+ * POST:   Create a new post Requires userID, username, and at least one of the optional parameters (textContent, location, photoPath, videoPath, visibility)
+ * PUT:    Update a post Requires userID, postID, and at least one of the optional parameters (textContent, photoPath, videoPath, visibility, username)
+ * DELETE: Delete a post Requires postID
+ * 
+ * 
+ * @package App\EndpointController
+ * @author Hassan <w20017074@northumbria.ac.uk>
  */
 
 use App\{
@@ -66,28 +76,38 @@ class Post extends Endpoint
                 $data = $this->delete();
                 break;
         }
-
         parent::__construct($data);
-    }  
+    }
 
     //=================================================================================================
     //=================================================================================================
     public function get()
     {
         $db = new Database(DB_PATH);
+        if(isset($this->requestData['postID']) && isset($this->requestData['userID'])) {
+            $sql = "SELECT * FROM post WHERE postID = :postID AND userID = :userID";
+            $sqlParams = [':postID' => $this->requestData['postID'], ':userID' => $this->requestData['userID']];
+            $data = $db->executeSQL($sql, $sqlParams);
+            if(count($data) === 0) {
+                $data['message'] = "No post found";
+            }
+            return $data;
+        }
+
         if (isset($this->requestData['postID'])) {
             $sql = "SELECT * FROM post WHERE postID = :postID";
             $sqlParams = [':postID' => $this->requestData['postID']];
             return $db->executeSQL($sql, $sqlParams);
-        } else if (isset($this->requestData['userID'])) {
+        }
+        if (isset($this->requestData['userID'])) {
             $sql = "SELECT * FROM post WHERE userID = :userID";
             $sqlParams = [':userID' => $this->requestData['userID']];
             return $db->executeSQL($sql, $sqlParams);
-        } else {
-            $sql = "SELECT * FROM post";
-            $sqlParams = [];
-            return $db->executeSQL($sql, $sqlParams);
         }
+        $sql = "SELECT * FROM post";
+        $sqlParams = [];
+        return $db->executeSQL($sql, $sqlParams);
+
     }
     //=================================================================================================
     //=================================================================================================
