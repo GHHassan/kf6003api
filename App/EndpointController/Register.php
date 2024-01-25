@@ -17,10 +17,10 @@ use App\ {
 };
 class Register extends Endpoint{
     private $sql;
-    private $sqlParams = ['name', 'email', 'password'];
+    private $sqlParams = ['username', 'email', 'password' ];
     private $password;
     private $email;
-    private $name;
+    private $username;
     private $db;
     private $allowedMethods = ['OPTION','POST'];
 
@@ -36,7 +36,6 @@ class Register extends Endpoint{
         }
         $data = $this->db->executeSql($this->sql, $this->sqlParams);
         $data['message'] = "success";
-        $this->setData($data);
         Parent::__construct($data);
     }
 
@@ -44,7 +43,7 @@ class Register extends Endpoint{
         if(isset($_POST['email'])){
             $this->email = $this->sanitiseString($_POST['email']);
         }
-        $sql = "SELECT email FROM account WHERE email = :email";
+        $sql = "SELECT email FROM users WHERE email = :email";
         $sqlParams = [
             ':email' => $this->email
         ];
@@ -59,37 +58,26 @@ class Register extends Endpoint{
         }
     }
 
-    protected function sanitiseString($input)
-    {
-        if (isset($input) && !empty($input) && is_string($input)) {
-            $result = htmlspecialchars($input);
-            return $result;
-        }
-        return $input;
-    }
-
     protected function initialiseSQL ()
     {
-        if(isset($_GET['name']) && isset($_GET['email']) && isset($_GET['password'])){
+        if(isset($_GET['username']) && isset($_GET['email']) && isset($_GET['password'])){
             if($this->isValidEmail($_GET['email'])){
-                $this->name = $this->sanitiseString($_GET['name']);
-                $this->name = ucwords($this->name);
-                $this->email = $this->sanitiseString($_GET['email']);
+                $this->username = $this->sanitiseString($_GET['username']);
+                $this->username = ucwords($this->username);
+                $this->email = $this->sanitiseEmail($_GET['email']);
                 $this->email = strtolower($this->email);
                 $this->password = password_hash($_GET['password'], PASSWORD_DEFAULT);
             }
         }else{
             throw new ClientError(400);
         }
-        $this->sql = "INSERT INTO account (name, email, password) VALUES (:name, :email, :password)";
+        $this->sql = "INSERT INTO users (username, email, password) VALUES (:username, :email, :password_hash)";
         $this->sqlParams = [
-            ':name' => $this->name,
+            ':username' => $this->username,
             ':email' => $this->email,
-            ':password' => $this->password
+            ':password_hash' => $this->password
         ];
-
     }
-
     function isValidEmail($email) {
         $pattern = '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/';
     
@@ -99,5 +87,4 @@ class Register extends Endpoint{
             throw new ClientError(400, "Invalid email");
         }
     }
-    
 }
