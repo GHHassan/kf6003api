@@ -12,6 +12,6 @@
  */
 
 define('SECRET', '2F5598DEEBD1E8275931D9BD25A4B');
-define('DB_PATH', 'db/chi2023.sqlite');
-define('DB_USER_PATH', 'db/users.sqlite');
-define('BASE_URL', '/kf6012/coursework/api');
+define('DB_PATH', 'db/socialY.db');
+define('DB_USER_PATH', 'db/socialYUsers.db');
+define('BASE_URL', '/kf6003API/api');
