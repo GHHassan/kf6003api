@@ -50,6 +50,10 @@ abstract class Router
                 case '/requesthandler':
                     $endpoint = new EndpointController\Requesthandler();
                     break;
+                case 'comment':
+                case '/comment':
+                    $endpoint = new EndpointController\Comment();
+                    break;
                 default:
                     throw new ClientError(404, 'check your url and try again');
             }
