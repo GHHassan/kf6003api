@@ -5,15 +5,21 @@ namespace App\EndpointController;
  * Profile
  * 
  * This class is responsible for handling requests to the /profile endpoint.
+ * All parameters should be passed via the http request body in JSON format.
  * 
- * Get: accepts a userID in the url and returns the profile data for that user
+ * allowed properites are given in allowedParams array see class properties.
+ * User ID is required for all methods except POST.
  * 
- * POST and PUT: accepts json Object with the following properties:
- * - properites in the allowedParams array.
- * post creates a new profile for the user
- * put updates the profile for the user
- * DELETE: accepts a userID in the url and deletes the profile for that user
+ * HTTP Request Methods:
  * 
+ * GET returns the profile for the user based on the userID
+ * POST creates a new profile for the user based on the parameters passed
+ * - Required parameters are userID, username, firstName, lastName, dateOfBirth, email
+ * PUT updates the profile for the user based on the userID and the parameters passed
+ * DELETE: Deletes a profile based on the userID
+ * 
+ * @package App\EndpointController
+ * @author Hassan <w20017074@northumbria.ac.uk>
  */
 use App\{
     ClientError,
@@ -30,56 +36,63 @@ class Profile extends Endpoint
     private $requestData;
     private $allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
     private $allowedParams = [
-        'firstname',
-        'lastname',
-        'dateofbirth',
+        'userID',
+        'username',
+        'firstName',
+        'lastName',
+        'dateOfBirth',
         'gender',
         'email',
-        'phonenumber',
+        'phoneNumber',
         'bio',
         'address',
-        'profilepicturepath',
-        'coverpicturepath',
-        'relationshipstatus',
+        'profilePicturePath',
+        'coverPicturePath',
+        'relationshipStatus',
         'website',
-        'joineddate',
-        'profilevisibility',
-        'emailvisibility',
-        'phonenumbervisibility',
-        'addressvisibility',
-        'relationshipstatusvisibility',
-        'gendervisibility',
-        'dateofbirthvisibility'
+        'joinedDate',
+        'profileVisibility',
+        'emailVisibility',
+        'phoneNumberVisibility',
+        'addressVisibility',
+        'relationshipStatusVisibility',
+        'genderVisibility',
+        'dateOfBirthVisibility'
     ];
 
     public function __construct()
     {
         $this->requestData = (new RequestHandler())->getData();
+        $this->checkAllowedParams($this->requestData, $this->allowedParams);
         $this->setProperties();
         // $this->userID = $_GET['userID'];
         $data = [];
-        if (Request::method() === 'GET') {
-            $data = $this->getUserProfile($this->userID);
-        }
-        if (Request::method() === 'POST') {
-            $data = $this->createProfile($this->requestData, $this->userID);
-        }
-        if (Request::method() === 'PUT') {
-            // $this->requestData = (new RequestHandler())->getData();
-            $data = $this->updateProfile($this->requestData, $this->userID);
-        }
-        if (Request::method() === 'DELETE') {
-            $data = $this->deleteProfile($this->userID);
+        switch(Request::method()) {
+            case 'GET':
+                $data = $this->getUserProfile();
+                break;
+            case 'POST':
+                $data = $this->createProfile();
+                break;
+            case 'PUT':
+                $data = $this->updateProfile();
+                break;
+            case 'DELETE':
+                $data = $this->deleteProfile();
+                break;
         }
         $data['message'] = "success";
         parent::__construct($data);
     }
 
-    private function getUserProfile($userID)
+    private function getUserProfile()
     {
+        if(!isset($this->requestData['userID'])) {
+            throw new ClientError(422, "userID is required");
+        }
         $db = new Database(DB_PATH);
         $sql = "SELECT * FROM Profile WHERE userID = :userID";
-        $sqlParams = [':userID' => $userID];
+        $sqlParams = [':userID' => $this->requestData['userID']];
         $result = $db->executeSql($sql, $sqlParams);
         if (count($result) === 0) {
             throw new ClientError(404, "Profile not found");
@@ -87,54 +100,62 @@ class Profile extends Endpoint
         return $result;
     }
 
+    //==============================================================================================
+    //==============================================================================================
 
-    private function createProfile($requestData, $userID = null)
+    private function createProfile()
     {
         $db = new Database(DB_PATH);
-        $updateFields = [];
-        foreach ($this->allowedParams as $param) {
-            if (isset($requestData[$param])) {
-                $updateFields[$param] = $param;
+        $requiredParams = [
+            'userID',
+            'username',
+            'firstName',
+            'lastName',
+            'dateOfBirth',
+            'email'
+        ];
+
+        // Check for required parameters
+        foreach ($requiredParams as $param) {
+            if (!isset($this->requestData[$param])) {
+                throw new ClientError(422, "One or more required parameters are missing.");
             }
         }
 
-        if (empty($updateFields)) {
-            throw new ClientError(400, "No valid parameters provided for update");
+        // Construct dynamic placeholders for the INSERT query
+        $placeholders = implode(', ', array_map(function ($param) {
+            return ":$param";
+        }, array_keys($this->requestData)));
+
+        // Construct the INSERT query with dynamic placeholders, including 'username'
+        $sql = "INSERT INTO Profile (" . implode(', ', array_keys($this->requestData)) .
+            ") VALUES ( $placeholders)";
+        $sqlParams = array_merge(array_values($this->requestData));
+
+        // Execute the SQL query
+
+        if (isset($this->requestData['userID']) && $this->requestData['userID'] !== null) {
+            if (!$this->profileExists($this->requestData['userID'])) {
+                $result = $db->executeSql($sql, $sqlParams);
+                $result['message'] = 'success';
+                if ($result['message'] === 'success') {
+                    return $result;
+                }
+            }
+            throw new ClientError(403, "user already exists");
         }
-
-        $sql = "INSERT INTO Profile (";
-        $sql .= implode(', ', array_keys($requestData));
-        $sql .= ", userID) VALUES (";
-
-        // Construct the parameter placeholders
-        $placeholders = array_map(
-            function ($column) {
-                return ":$column";
-            },
-            array_keys($requestData)
-        );
-
-        $sql .= implode(', ', $placeholders);
-        $sql .= ", :userID)";
-
-        // Prepare the SQL parameters
-        $sqlParams = array_merge($requestData, [':userID' => $userID]);
-
-        $result = $db->executeSql($sql, $sqlParams);
-        if ($result['message'] = 'succes')
-            return $result;
-        else
-            throw new ClientError(500);
     }
+    //==============================================================================================
+    //==============================================================================================
 
-    private function updateProfile($requestData, $userID = null)
+    private function updateProfile()
     {
         $db = new Database(DB_PATH);
 
         // Extract columns and values to update from $requestData
         $updateFields = [];
         foreach ($this->allowedParams as $param) {
-            if (isset($requestData[$param])) {
+            if (isset($this->requestData[$param])) {
                 $updateFields[$param] = $param;
             }
         }
@@ -163,68 +184,49 @@ class Profile extends Endpoint
         // Prepare the SQL parameters
         $sqlParams = [];
         foreach ($updateFields as $param) {
-            $sqlParams[":$param"] = $requestData[$param];
+            $sqlParams[":$param"] = $this->requestData[$param];
         }
-        $sqlParams[':userID'] = $userID;
-        echo $sql . "\n";
-        echo json_encode($sqlParams) . "\n";
+        $sqlParams[':userID'] = $this->requestData['userID'];
         // Execute the SQL query
+        $data = $db->executeSql($sql, $sqlParams);
+        $data['message'] = 'success';
+
+        if ($data['message'] === 'success') {
+            return $data;
+        } else {
+            throw new ClientError(500);
+        }
+    }
+
+    //==============================================================================================
+    //==============================================================================================
+    private function profileExists($userID)
+    {
+        $db = new Database(DB_PATH);
+        $sql = "SELECT userID FROM Profile WHERE userID = :userID";
+        $sqlParams = [':userID' => $userID];
+        $data = $db->executeSql($sql, $sqlParams);
+        if (count($data) > 1) {
+            throw new ClientError(500);
+        }
+        if (count($data) === 0) {
+            return false;
+        }
+        return true;
+    }
+    //==============================================================================================
+    //==============================================================================================
+    private function deleteProfile()
+    {
+        $db = new Database(DB_PATH);
+        $sql = "DELETE FROM Profile WHERE userID = :userID";
+        $sqlParams = [':userID' => $this->requestData['userID']];
         $result = $db->executeSql($sql, $sqlParams);
         $result['message'] = 'success';
         if ($result['message'] === 'success') {
             return $result;
         } else {
             throw new ClientError(500);
-        }
-    }
-
-    private function getUserID()
-    {
-        $db = new Database(DB_USER_PATH);
-        if ($this->requestData !== null) {
-            $sql = "SELECT userID FROM users WHERE email = :email";
-            $sqlParams = [
-                ':email' => $this->requestData['email']
-            ];
-            $data = $db->executeSql($sql, $sqlParams);
-            if (count($data) === 0) {
-                throw new ClientError(404, "User not found");
-            }
-            if (count($data) > 1) {
-                throw new ClientError(500);
-            }
-            return $data[0]['userID'];
-        } else {
-            throw new ClientError(400, "No valid parameters provided for update");
-        }
-    }
-
-    private function deleteProfile($userID)
-    {
-        $db = new Database(DB_PATH);
-        $sql = "DELETE FROM Profile WHERE userID = :userID";
-        $sqlParams = [':userID' => $userID];
-        $result = $db->executeSql($sql, $sqlParams);
-        if ($result['message'] === 'success') {
-            return $result;
-        } else {
-            throw new ClientError(500);
-        }
-    }
-    private function setProperties()
-    {
-        if ((new RequestHandler())->getData() !== null) {
-            $this->requestData = (new RequestHandler())->getData();
-            foreach ($this->allowedParams as $param) {
-                if (Requesthandler::hasParam($param)) {
-                    $this->{$param} = Requesthandler::getParam($param);
-                }
-            }
-        }
-        if ($this->requestData !== null && isset($this->requestData['userID'])) {
-            $this->userID = $this->requestData['userID'];
-        } else if (isset($_GET['userID'])) {
-            $this->userID = $_GET['userID'];
         }
     }
 }
