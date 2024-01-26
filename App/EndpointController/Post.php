@@ -37,7 +37,6 @@ class Post extends Endpoint
     private $photoPath;
     private $videoPath;
     private $visibility;
-    private $requestData;
 
     private $allowedParams = [
         'textContent',
@@ -59,8 +58,12 @@ class Post extends Endpoint
     public function __construct()
     {
         $this->db = new Database(DB_PATH);
-        $this->setProperties();
-        $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
+        $this->handleRequest();
+        
+    }
+
+    protected function performAction()
+    {
         $data = [];
         switch (Request::method()) {
             case 'GET':
@@ -78,7 +81,6 @@ class Post extends Endpoint
         }
         parent::__construct($data);
     }
-
     //=================================================================================================
     //=================================================================================================
     public function get()
@@ -199,7 +201,6 @@ class Post extends Endpoint
             throw new ClientError(422, "At least one property of the post is required");
         }
 
-        echo json_encode($providedPropertyKeys) . "\n";
         // Extract valid parameters for update
         $updateFields = array_intersect($providedPropertyKeys, $allParams);
 
@@ -244,26 +245,26 @@ class Post extends Endpoint
             throw new ClientError(422, "PostID is required");
         }
         $sql = "DELETE FROM post WHERE postID = :postID";
-        $sqlParams = [':postID' => $this->postID];
+        $sqlParams = [':postID' => $this->requestData['postID']];
         $data[] = $this->db->executeSQL($sql, $sqlParams);
         $data['message'] = "success";
         return $data;
     }
 
-    protected function setProperties()
-    {
-        if ((new Requesthandler())->getData() !== null) {
-            $this->requestData = (new Requesthandler())->getData();
-            foreach ($this->allowedParams as $param) {
-                if (Requesthandler::hasParam($param)) {
-                    $this->{$param} = Requesthandler::getParam($param);
-                }
-            }
-        }
-        if ($this->requestData !== null && isset($this->requestData['userID'])) {
-            $this->userID = $this->requestData['userID'];
-        } else if (isset($_GET['userID'])) {
-            $this->userID = $_GET['userID'];
-        }
-    }
+    // protected function setProperties()
+    // {
+    //     if ((new Requesthandler())->getData() !== null) {
+    //         $this->requestData = (new Requesthandler())->getData();
+    //         foreach ($this->allowedParams as $param) {
+    //             if (Requesthandler::hasParam($param)) {
+    //                 $this->{$param} = Requesthandler::getParam($param);
+    //             }
+    //         }
+    //     }
+    //     if ($this->requestData !== null && isset($this->requestData['userID'])) {
+    //         $this->userID = $this->requestData['userID'];
+    //     } else if (isset($_GET['userID'])) {
+    //         $this->userID = $_GET['userID'];
+    //     }
+    // }
 }

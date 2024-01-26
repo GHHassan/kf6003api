@@ -28,12 +28,11 @@ use App\{
 
 class Comment extends Endpoint
 {
-    private $db;
     private $commentID;
     private $postID;
     private $userID;
     private $commentContent;
-    private $requestData;
+    private $requestData ;
 
     private $allowedParams = [
         'commentContent',
@@ -130,7 +129,7 @@ class Comment extends Endpoint
     public function post()
     {
         $requiredParams = ['postID', 'userID', 'username', 'commentContent'];
-
+        // Check if all required parameters are provided
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "All required parameters ('postID', 'userID', 'username', 'commentContent') are mandatory.");
@@ -139,11 +138,6 @@ class Comment extends Endpoint
 
         // Check and sync parameters
         $paramKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
-
-        // Extract valid parameer values
-        $paramValues = array_map(function ($param) {
-            return $this->requestData[$param];
-        }, $paramKeys);
         
         // Construct dynamic placeholders for the INSERT query
         $placeholders = implode(', ', array_map(function ($param) {
@@ -155,9 +149,6 @@ class Comment extends Endpoint
         foreach ($paramKeys as $param) {
             $sqlParams[":$param"] = $this->requestData[$param];
         }
-        echo $sql . "\n";
-        echo json_encode($sqlParams) . "\n";
-        // Execute the SQL query
         $data = $this->db->executeSQL($sql, $sqlParams);
         $data['message'] = "success";
         return $data;
@@ -173,23 +164,13 @@ class Comment extends Endpoint
     public function updateComment()
     {
         // Ensure that 'commentID', 'userID', and at least one of the properties are compulsory
-        $requiredParams = ['commentID', 'userID'];
-        $optionalParams = ['commentContent', 'username'];
+        $requiredParams = ['commentID', 'userID', 'commentContent'];
 
         // Check if all required parameters are provided
-        $providedRequiredParams = array_intersect($requiredParams, array_keys($this->requestData));
-        if (count($providedRequiredParams) !== count($requiredParams)) {
+        $providedParams = array_intersect($requiredParams, array_keys($this->requestData));
+        if (count($providedParams) !== count($requiredParams)) {
             throw new ClientError(422, "All required parameters ('commentID', 'userID') are mandatory.");
         }
-
-        // Check if at least one of the specified optional parameters is provided
-        $providedOptionalParams = array_intersect($optionalParams, array_keys($this->requestData));
-        if (empty($providedOptionalParams)) {
-            throw new ClientError(422, "At least one of the optional parameters ('commentContent', 'username') is required");
-        }
-
-        // Merge required and optional parameters
-        $allParams = array_merge($requiredParams, $optionalParams);
 
         // Check and sync SQL placeholders with allowed params
         $providedPropertyKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
@@ -199,7 +180,7 @@ class Comment extends Endpoint
         }
 
         // Extract valid parameters for update
-        $updateFields = array_intersect($providedPropertyKeys, $allParams);
+        $updateFields = array_intersect($providedPropertyKeys, $providedParams);
 
         if (empty($updateFields)) {
             throw new ClientError(400, "No valid parameters provided for updating a comment.");
@@ -221,7 +202,7 @@ class Comment extends Endpoint
         $sqlParams = [];
 
         // Iterate through the keys in $updateFields and fetch corresponding values
-        foreach ($updateFields as $property) {
+        foreach ($providedParams as $property) {
             // Check if the property exists in $this->requestData before accessing it
             if (isset($this->requestData[$property])) {
                 // Assign the value to the $sqlParams array
@@ -246,13 +227,14 @@ class Comment extends Endpoint
             throw new ClientError(422, "CommentID is required");
         }
         $sql = "DELETE FROM comment WHERE commentID = :commentID";
-        $sqlParams = [':commentID' => $this->commentID];
+        $sqlParams = [':commentID' => $this->requestData['commentID']];
+        echo $sql .' sql';
+        echo json_encode($sqlParams);
         $data[] = $this->db->executeSQL($sql, $sqlParams);
         $data['message'] = "success";
         return $data;
     }
-
-    /**
+     /**
      * Set properties based on request data or query parameters.
      */
     protected function setProperties()

@@ -33,7 +33,7 @@ class Profile extends Endpoint
     private $db;
     private $userID;
     private $data;
-    private $requestData;
+    protected $requestData;
     private $allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
     private $allowedParams = [
         'userID',
@@ -62,10 +62,13 @@ class Profile extends Endpoint
 
     public function __construct()
     {
-        $this->requestData = (new RequestHandler())->getData();
-        $this->checkAllowedParams($this->requestData, $this->allowedParams);
-        $this->setProperties();
-        // $this->userID = $_GET['userID'];
+        $this->db = new Database(DB_PATH);
+        $this->handleRequest();        
+        parent::__construct($this->getData());
+    }
+
+    protected function performAction()
+    {
         $data = [];
         switch(Request::method()) {
             case 'GET':
@@ -81,8 +84,7 @@ class Profile extends Endpoint
                 $data = $this->deleteProfile();
                 break;
         }
-        $data['message'] = "success";
-        parent::__construct($data);
+        $this->setData($data);
     }
 
     private function getUserProfile()
@@ -90,13 +92,14 @@ class Profile extends Endpoint
         if(!isset($this->requestData['userID'])) {
             throw new ClientError(422, "userID is required");
         }
-        $db = new Database(DB_PATH);
         $sql = "SELECT * FROM Profile WHERE userID = :userID";
         $sqlParams = [':userID' => $this->requestData['userID']];
-        $result = $db->executeSql($sql, $sqlParams);
+        $result = $this->db->executeSql($sql, $sqlParams);
         if (count($result) === 0) {
-            throw new ClientError(404, "Profile not found");
+            $result['message'] = 'not found';
+            return $result;
         }
+        $result['message'] = 'success';
         return $result;
     }
 

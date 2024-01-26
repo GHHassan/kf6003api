@@ -24,6 +24,7 @@ use App\{
     ClientError,
     Database,
     Requesthandler,
+    Request
 };
 use Firebase\JWT\JWT;
 
@@ -33,29 +34,48 @@ class Endpoint
     private $sqlParams;
     private $data;
     private $db;
-    private $allowedMethods = [];
+    private $allowedMethods = [
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE'
+    ];
     private $userID;
-    private $requestData;
-    private $allowedParams = ['GET', 'OPTIONS', 'POST', 'PUT', 'DELETE'];
+    protected $requestData;
+    private $allowedParams = [];
 
     public function __construct($data = ["message" => []])
     {
         $this->setData($data);
     }
-    protected function checkAllowedMethod($methods, $allowedMethods = [])
+    protected function handleRequest()
     {
-        if (!is_array($methods)) {
-            // Handle the case when a single method is passed
-            $methods = [$methods];
-        }
+        $this->checkAllowedMethod();
+        $this->setProperties();
+        $this->initialiseSQL();
+        $this->performAction();
 
-        foreach ($methods as $method) {
-            if (!in_array($method, $allowedMethods)) {
-                throw new ClientError(405, "Method Not Allowed");
-            }
-        }
     }
 
+    // New method to perform the specific action for the endpoint
+    protected function performAction()
+    {
+        // This method should be implemented by child classes
+    }
+
+    // New method to send an error response
+    protected function sendErrorResponse($code, $message)
+    {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => ['code' => $code, 'message' => $message]]);
+    }
+    protected function checkAllowedMethod()
+    {
+        if (!in_array(Request::method(), $this->allowedMethods)) {
+            throw new ClientError(405);
+        }
+    }
 
     protected function sanitiseNum($input)
     {
@@ -176,10 +196,13 @@ class Endpoint
         return trim(substr($authorizationHeader, 7));
     }
 
+    /**
+     * Set properties based on request data or query parameters.
+     */
     protected function setProperties()
     {
-        if ((new RequestHandler())->getData() !== null) {
-            $this->requestData = (new RequestHandler())->getData();
+        if ((new Requesthandler())->getData() !== null) {
+            $this->requestData = (new Requesthandler())->getData();
             foreach ($this->allowedParams as $param) {
                 if (Requesthandler::hasParam($param)) {
                     $this->{$param} = Requesthandler::getParam($param);
@@ -192,7 +215,6 @@ class Endpoint
             $this->userID = $_GET['userID'];
         }
     }
-
     protected function getUserID()
     {
         $db = new Database(DB_USER_PATH);
@@ -253,5 +275,25 @@ class Endpoint
     public function setAllowedParams($allowedParams)
     {
         $this->allowedParams = $allowedParams;
+    }
+
+    public function getAllowedParams()
+    {
+        return $this->allowedParams;
+    }
+
+    public function setAllowedMethods($allowedMethods)
+    {
+        $this->allowedMethods = $allowedMethods;
+    }
+
+    public function getRequestData()
+    {
+        return $this->requestData;
+    }
+
+    public function setRequestData($requestData)
+    {
+        $this->requestData = $requestData;
     }
 }

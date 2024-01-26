@@ -34,9 +34,9 @@ abstract class Router
                 case '/token':
                     $endpoint = new Auth\Token();
                     break;
-                case 'notes':
-                case '/notes':
-                    $endpoint = new EndpointController\Note();
+                case 'reactions':
+                case '/reactions':
+                    $endpoint = new EndpointController\Reaction();
                     break;
                 case 'register':
                 case '/register':
