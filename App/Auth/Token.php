@@ -30,7 +30,7 @@ class Token extends \App\EndpointController\Endpoint
 
     public function __construct() {
         $this->checkAllowedParams(Request::params(), $this->allowedParams);
-        $this->checkAllowedMethod(Request::method(), $this->allowedParams);
+        $this->checkAllowedMethod();
         $id = $this->checkCredentials();
         $data['token'] = $this->generateJWT($id);
         $data['message'] = 'success';

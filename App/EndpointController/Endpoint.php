@@ -116,7 +116,6 @@ class Endpoint
     protected function checkAllowedParams($params, $allowedParams = [])
     {
         if (!is_array($params)) {
-            // Handle the case when a single parameter is passed
             $params = [$params];
         }
 
@@ -215,26 +214,7 @@ class Endpoint
             $this->userID = $_GET['userID'];
         }
     }
-    protected function getUserID()
-    {
-        $db = new Database(DB_USER_PATH);
-        if ($this->requestData !== null) {
-            $sql = "SELECT userID FROM users WHERE email = :email";
-            $sqlParams = [
-                ':email' => $this->requestData['email']
-            ];
-            $data = $db->executeSql($sql, $sqlParams);
-            if (count($data) === 0) {
-                throw new ClientError(404, "User not found");
-            }
-            if (count($data) > 1) {
-                throw new ClientError(500);
-            }
-            return $data[0]['userID'];
-        } else {
-            throw new ClientError(400, "No valid parameters provided for update");
-        }
-    }
+    
     public function setSql($sql)
     {
         $this->sql = $sql;

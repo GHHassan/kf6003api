@@ -46,9 +46,9 @@ abstract class Router
                 case '/profile':
                     $endpoint = new EndpointController\Profile();
                     break;
-                case 'requesthandler':
-                case '/requesthandler':
-                    $endpoint = new EndpointController\Requesthandler();
+                case 'friendship':
+                case '/friendship':
+                    $endpoint = new EndpointController\Friendship();
                     break;
                 case 'comment':
                 case '/comment':

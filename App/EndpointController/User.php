@@ -25,9 +25,9 @@ class User extends Endpoint
     private $db;
     private $allowedMethods = ['OPTION', 'POST'];
 
-    public function __construct($data = ["message" => []])
+    public function __construct()
     {
-        $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
+        $this->checkAllowedMethod();
         $this->checkAllowedParams(Request::params(), $this->sqlParams);
         $this->db = new Database(DB_USER_PATH);     
         $data = $this->getUser();

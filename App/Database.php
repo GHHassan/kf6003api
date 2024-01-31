@@ -29,11 +29,27 @@ class Database {
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    
+            $queryType = strtoupper(explode(' ', $sql, 2)[0]);
+    
+            if ($queryType === 'SELECT') {
+                return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            } elseif ($queryType === 'INSERT') {
+                $lastInsertId = $this->pdo->lastInsertId();
+                return [
+                    'lastInsertId' => $lastInsertId,
+                ];
+            } else {
+                $rowCount = $stmt->rowCount();
+                return [
+                    'rowCount' => $rowCount,
+                ];
+            }
         } catch (\PDOException $e) {
             throw new \Exception("Database error: " . $e->getMessage());
         }
     }
+    
 
     public function countRows($sql, $params = []) {
         try {

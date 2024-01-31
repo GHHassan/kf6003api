@@ -23,7 +23,7 @@ class Developer extends Endpoint
     public function __construct()
     {
         $this->checkAllowedParams(Request::params(), $this->allowedParams);
-        $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
+        $this->checkAllowedMethod();
         $this->data['fullname'] = $this->fullname;
         $this->data['Student ID'] = $this->studentID;
 

@@ -32,7 +32,7 @@ class Comment extends Endpoint
     private $postID;
     private $userID;
     private $commentContent;
-    private $requestData ;
+    protected $requestData;
 
     private $allowedParams = [
         'commentContent',
@@ -51,7 +51,7 @@ class Comment extends Endpoint
     {
         $this->db = new Database(DB_PATH);
         $this->setProperties();
-        $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
+        $this->checkAllowedMethod();
         $data = [];
         switch (Request::method()) {
             case 'GET':
@@ -82,41 +82,38 @@ class Comment extends Endpoint
     public function get()
     {
         $db = new Database(DB_PATH);
-        if (isset($this->requestData['postID']) && isset($this->requestData['userID'])) {
-            $sql = "SELECT * FROM comment WHERE postID = :postID AND userID = :userID";
-            $sqlParams = [':postID' => $this->requestData['postID'], ':userID' => $this->requestData['userID']];
-            $data = $db->executeSQL($sql, $sqlParams);
-            if (count($data) === 0) {
-                $data['message'] = "No comments found for the specified post and user.";
-            }
-            return $data;
-        }
+
+        $message = "No comments found for the specified criteria.";
 
         if (isset($this->requestData['commentID'])) {
             $sql = "SELECT * FROM comment WHERE commentID = :commentID";
             $sqlParams = [':commentID' => $this->requestData['commentID']];
-            $data = $db->executeSQL($sql, $sqlParams);
-            if (count($data) === 0) {
-                $data['message'] = "No comments found for the specified commentID.";
-            }
-            return $data;
-        }
-
-        if (isset($this->requestData['postID'])) {
+        } elseif (isset($this->requestData['postID'], $this->requestData['userID'])) {
+            $sql = "SELECT * FROM comment WHERE postID = :postID AND userID = :userID";
+            $sqlParams = [
+                ':postID' => $this->requestData['postID'],
+                ':userID' => $this->requestData['userID'],
+            ];
+        } elseif (isset($this->requestData['postID'])) {
             $sql = "SELECT * FROM comment WHERE postID = :postID";
             $sqlParams = [':postID' => $this->requestData['postID']];
-            return $db->executeSQL($sql, $sqlParams);
-        }
-
-        if (isset($this->requestData['userID'])) {
+        } elseif (isset($this->requestData['userID'])) {
             $sql = "SELECT * FROM comment WHERE userID = :userID";
             $sqlParams = [':userID' => $this->requestData['userID']];
-            return $db->executeSQL($sql, $sqlParams);
+        } else {
+            $sql = "SELECT * FROM comment";
+            $sqlParams = [];
         }
 
-        $sql = "SELECT * FROM comment";
-        $sqlParams = [];
-        return $db->executeSQL($sql, $sqlParams);
+        $data = $db->executeSQL($sql, $sqlParams);
+
+        if (count($data) <= 0) {
+            $data['message'] = $message;
+        } else {
+            $data['message'] = "success";
+        }
+
+        return $data;
     }
 
     /**
@@ -129,21 +126,17 @@ class Comment extends Endpoint
     public function post()
     {
         $requiredParams = ['postID', 'userID', 'username', 'commentContent'];
-        // Check if all required parameters are provided
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "All required parameters ('postID', 'userID', 'username', 'commentContent') are mandatory.");
             }
         }
 
-        // Check and sync parameters
         $paramKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
-        
-        // Construct dynamic placeholders for the INSERT query
         $placeholders = implode(', ', array_map(function ($param) {
             return ":$param";
         }, $paramKeys));
-        // Construct the INSERT query with dynamic placeholders
+
         $sql = "INSERT INTO comment (" . implode(', ', $paramKeys) . ") VALUES ($placeholders)";
         $sqlParams = [];
         foreach ($paramKeys as $param) {
@@ -156,37 +149,32 @@ class Comment extends Endpoint
 
     /**
      * Update a comment.
-     * Requires commentID, userID, and at least one of the optional parameters (commentContent, username).
+     * Requires commentID, userID, and at least one of the optional parameters (commentContent).
      *
      * @return array
      * @throws ClientError
      */
     public function updateComment()
     {
-        // Ensure that 'commentID', 'userID', and at least one of the properties are compulsory
         $requiredParams = ['commentID', 'userID', 'commentContent'];
 
-        // Check if all required parameters are provided
         $providedParams = array_intersect($requiredParams, array_keys($this->requestData));
         if (count($providedParams) !== count($requiredParams)) {
             throw new ClientError(422, "All required parameters ('commentID', 'userID') are mandatory.");
         }
 
-        // Check and sync SQL placeholders with allowed params
         $providedPropertyKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
 
         if (empty($providedPropertyKeys)) {
             throw new ClientError(422, "At least one property of the comment is required");
         }
 
-        // Extract valid parameters for update
         $updateFields = array_intersect($providedPropertyKeys, $providedParams);
 
         if (empty($updateFields)) {
             throw new ClientError(400, "No valid parameters provided for updating a comment.");
         }
 
-        // Construct the UPDATE query
         $setClauses = array_map(
             function ($column) {
                 return "$column = :$column";
@@ -195,21 +183,14 @@ class Comment extends Endpoint
         );
 
         $sql = "UPDATE comment SET " . implode(', ', $setClauses);
-        // Add the WHERE condition for CommentID and UserID
         $sql .= " WHERE commentID = :commentID AND userID = :userID";
-
-        // Create an array for SQL parameters
         $sqlParams = [];
 
-        // Iterate through the keys in $updateFields and fetch corresponding values
         foreach ($providedParams as $property) {
-            // Check if the property exists in $this->requestData before accessing it
             if (isset($this->requestData[$property])) {
-                // Assign the value to the $sqlParams array
                 $sqlParams[":$property"] = $this->requestData[$property];
             }
         }
-        // Execute the SQL query
         $data = $this->db->executeSQL($sql, $sqlParams);
         $data['message'] = "success";
         return $data;
@@ -228,29 +209,10 @@ class Comment extends Endpoint
         }
         $sql = "DELETE FROM comment WHERE commentID = :commentID";
         $sqlParams = [':commentID' => $this->requestData['commentID']];
-        echo $sql .' sql';
+        echo $sql . ' sql';
         echo json_encode($sqlParams);
         $data[] = $this->db->executeSQL($sql, $sqlParams);
         $data['message'] = "success";
         return $data;
-    }
-     /**
-     * Set properties based on request data or query parameters.
-     */
-    protected function setProperties()
-    {
-        if ((new Requesthandler())->getData() !== null) {
-            $this->requestData = (new Requesthandler())->getData();
-            foreach ($this->allowedParams as $param) {
-                if (Requesthandler::hasParam($param)) {
-                    $this->{$param} = Requesthandler::getParam($param);
-                }
-            }
-        }
-        if ($this->requestData !== null && isset($this->requestData['userID'])) {
-            $this->userID = $this->requestData['userID'];
-        } else if (isset($_GET['userID'])) {
-            $this->userID = $_GET['userID'];
-        }
     }
 }
