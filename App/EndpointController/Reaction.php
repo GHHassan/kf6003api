@@ -7,13 +7,12 @@ namespace App\EndpointController;
  *
  * This class is responsible for handling reactions (e.g., likes) on posts.
  * It can handle GET, POST, PUT, and DELETE requests for reactions.
- *
  * Parameters: should be passed as JSON in the body of the HTTP request
  *
  * HTTP Request Methods:
- * GET:    Get reactions for a post by postID or for a user by userID
- * POST:   Create a new reaction on a post Requires postID, userID, and reactionType
- * PUT:    Update a reaction Requires reactionID, userID, and newReactionType
+ * GET: Get reactions for a post by postID or for a user by userID
+ * POST: Create a new reaction on a post Requires postID, userID, and reactionType
+ * PUT: Update a reaction Requires reactionID, userID, and newReactionType
  * DELETE: Delete a reaction Requires reactionID
  *
  * @package App\EndpointController
@@ -22,8 +21,7 @@ namespace App\EndpointController;
 use App\{
     ClientError,
     Database,
-    Request,
-    Requesthandler
+    Request
 };
 
 class Reaction extends Endpoint
@@ -83,16 +81,14 @@ class Reaction extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function get()
+    private function get()
     {
         $db = new Database(DB_PATH);
         if (isset($this->requestData['postID']) && isset($this->requestData['userID'])) {
             $sql = "SELECT * FROM reaction WHERE postID = :postID AND userID = :userID";
             $sqlParams = [':postID' => $this->requestData['postID'], ':userID' => $this->requestData['userID']];
             $data = $db->executeSQL($sql, $sqlParams);
-            if (count($data) === 0) {
-                $data['message'] = "No reactions found for the specified post and user.";
-            }
+            count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
             return $data;
         }
 
@@ -100,27 +96,31 @@ class Reaction extends Endpoint
             $sql = "SELECT * FROM reaction WHERE reactionID = :reactionID";
             $sqlParams = [':reactionID' => $this->requestData['reactionID']];
             $data = $db->executeSQL($sql, $sqlParams);
-            if (count($data) === 0) {
-                $data['message'] = "No reactions found for the specified reactionID.";
-            }
+            count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
             return $data;
         }
 
         if (isset($this->requestData['postID'])) {
             $sql = "SELECT * FROM reaction WHERE postID = :postID";
             $sqlParams = [':postID' => $this->requestData['postID']];
-            return $db->executeSQL($sql, $sqlParams);
+            $data = $db->executeSQL($sql, $sqlParams);
+            count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
+            return $data;
         }
 
         if (isset($this->requestData['userID'])) {
             $sql = "SELECT * FROM reaction WHERE userID = :userID";
             $sqlParams = [':userID' => $this->requestData['userID']];
-            return $db->executeSQL($sql, $sqlParams);
+            $data = $db->executeSQL($sql, $sqlParams);
+            count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
+            return $data;
         }
 
         $sql = "SELECT * FROM reaction";
         $sqlParams = [];
-        return $db->executeSQL($sql, $sqlParams);
+        $data = $db->executeSQL($sql, $sqlParams);
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
+        return $data;
     }
 
     /**
@@ -133,28 +133,25 @@ class Reaction extends Endpoint
     public function post()
     {
         $requiredParams = ['postID', 'userID', 'reactionType'];
-        // Check if all required parameters are provided
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "All required parameters ('postID', 'userID', 'reactionType') are mandatory.");
             }
         }
-
         // Check and sync parameters
         $paramKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
 
-        // Construct dynamic placeholders for the INSERT query
+        // Construct dynamic INSERT query
         $placeholders = implode(', ', array_map(function ($param) {
             return ":$param";
         }, $paramKeys));
-        // Construct the INSERT query with dynamic placeholders
         $sql = "INSERT INTO reaction (" . implode(', ', $paramKeys) . ") VALUES ($placeholders)";
         $sqlParams = [];
         foreach ($paramKeys as $param) {
             $sqlParams[":$param"] = $this->requestData[$param];
         }
         $data = $this->db->executeSQL($sql, $sqlParams);
-        $data['message'] = "success";
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
     }
 
@@ -167,19 +164,18 @@ class Reaction extends Endpoint
      */
     public function updateReaction()
     {
-        // Ensure that 'reactionID', 'userID', and at least one of the properties are compulsory
         $requiredParams = ['reactionID', 'userID', 'reactionType'];
 
-        // Check if all required parameters are provided
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "All required parameters ('reactionID', 'userID', 'reactionType') are mandatory.");
             }
         }
-        // Check and sync SQL placeholders with allowed params
+
+        // Check and sync params
         $providedPropertyKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
-        // Extract valid parameters for update
         $updateFields = array_intersect($providedPropertyKeys, array_keys($this->requestData));
+
         if (empty($updateFields)) {
             throw new ClientError(400, "No valid parameters provided for updating a reaction.");
         }
@@ -192,22 +188,16 @@ class Reaction extends Endpoint
         );
 
         $sql = "UPDATE reaction SET " . implode(', ', $setClauses);
-        // Add the WHERE condition for ReactionID and UserID
         $sql .= " WHERE reactionID = :reactionID";
-
-        // Create an array for SQL parameters
         $sqlParams = [];
 
-        // Iterate through the keys in $updateFields and fetch corresponding values
         foreach ($updateFields as $property) {
-            // Check if the property exists in $this->requestData before accessing it
             if (isset($this->requestData[$property])) {
-                // Assign the value to the $sqlParams array
                 $sqlParams[":$property"] = $this->requestData[$property];
             }
         }
         $data = $this->db->executeSQL($sql, $sqlParams);
-        $data['message'] = "success";
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
     }
 
@@ -224,8 +214,8 @@ class Reaction extends Endpoint
         }
         $sql = "DELETE FROM reaction WHERE reactionID = :reactionID";
         $sqlParams = [':reactionID' => $this->requestData['reactionID']];
-        $data[] = $this->db->executeSQL($sql, $sqlParams);
-        $data['message'] = "success";
+        $data = $this->db->executeSQL($sql, $sqlParams);
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
     }
 }

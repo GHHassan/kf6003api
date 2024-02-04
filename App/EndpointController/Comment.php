@@ -79,7 +79,7 @@ class Comment extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function get()
+    private function get()
     {
         $db = new Database(DB_PATH);
 
@@ -123,7 +123,7 @@ class Comment extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function post()
+    private function post()
     {
         $requiredParams = ['postID', 'userID', 'username', 'commentContent'];
         foreach ($requiredParams as $param) {
@@ -154,7 +154,7 @@ class Comment extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function updateComment()
+    private function updateComment()
     {
         $requiredParams = ['commentID', 'userID', 'commentContent'];
 
@@ -202,7 +202,7 @@ class Comment extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function delete()
+    private function delete()
     {
         if (!isset($this->requestData['commentID'])) {
             throw new ClientError(422, "CommentID is required");

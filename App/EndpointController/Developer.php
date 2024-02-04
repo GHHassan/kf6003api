@@ -30,22 +30,22 @@ class Developer extends Endpoint
         parent::__construct($this->data);
     }
 
-    public function getFullname()
+    private function getFullname()
     {
         return $this->fullname;
     }
 
-    public function setFullname($fullname)
+    private function setFullname($fullname)
     {
         $this->fullname = $fullname;
     }
 
-    public function getStudentID()
+    private function getStudentID()
     {
         return $this->studentID;
     }
 
-    public function setStudentID($studentID)
+    private function setStudentID($studentID)
     {
         $this->studentID = $studentID;
     }

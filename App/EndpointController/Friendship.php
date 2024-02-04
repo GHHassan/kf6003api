@@ -131,9 +131,7 @@ class Friendship extends Endpoint
         ];
 
         $result = $this->db->executeSql($sql, $sqlParams);
-        if(count($result) > 0){
-            $result['message'] = 'success';
-        }
+        count($result) > 0 ? $result['message'] = 'success' : $result['message'] = 'failed';
         return $result;
     }
 
@@ -167,16 +165,13 @@ class Friendship extends Endpoint
         ];
 
         $result = $this->db->executeSql($sql, $sqlParams);
-        if(count($result) > 0){
-            $result['message'] = 'success';
-        }
+        count($result) > 0 ? $result['message'] = 'success' : $result['message'] = 'failed';
         return $result;
     }
 
     private function removeFriend()
     {
         $requiredParams = ['connectionID'];
-        
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "One or more required parameters are missing.");
@@ -185,11 +180,9 @@ class Friendship extends Endpoint
 
         $sql = "DELETE FROM Friends WHERE connectionID = :connectionID";
         $sqlParams = [':connectionID' => $this->requestData['connectionID']];
-        $result = $this->db->executeSql($sql, $sqlParams);
 
-        if(count($result) > 0){
-            $result['message'] = 'success';
-        }
+        $result = $this->db->executeSql($sql, $sqlParams);
+        count($result) > 0 ? $result['message'] = 'success' : $result['message'] = 'failed';
         return $result;
     }
 }

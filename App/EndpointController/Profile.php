@@ -1,4 +1,5 @@
 <?php
+
 namespace App\EndpointController;
 
 /**
@@ -24,8 +25,7 @@ namespace App\EndpointController;
 use App\{
     ClientError,
     Database,
-    Request,
-    Requesthandler
+    Request
 };
 
 class Profile extends Endpoint
@@ -95,16 +95,10 @@ class Profile extends Endpoint
         $sql = "SELECT * FROM Profile WHERE userID = :userID";
         $sqlParams = [':userID' => $this->requestData['userID']];
         $result = $this->db->executeSql($sql, $sqlParams);
-        if (count($result) === 0) {
-            $result['message'] = 'not found';
-            return $result;
-        }
-        $result['message'] = 'success';
+
+        count($result) > 0 ? $result['message'] = 'success' : $result['message'] = 'not found'; 
         return $result;
     }
-
-    //==============================================================================================
-    //==============================================================================================
 
     private function createProfile()
     {
@@ -118,24 +112,20 @@ class Profile extends Endpoint
             'email'
         ];
 
-        // Check for required parameters
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "One or more required parameters are missing.");
             }
         }
 
-        // Construct dynamic placeholders for the INSERT query
+        // Construct dynamic INSERT query
         $placeholders = implode(', ', array_map(function ($param) {
             return ":$param";
         }, array_keys($this->requestData)));
 
-        // Construct the INSERT query with dynamic placeholders, including 'username'
         $sql = "INSERT INTO Profile (" . implode(', ', array_keys($this->requestData)) .
             ") VALUES ( $placeholders)";
         $sqlParams = array_merge(array_values($this->requestData));
-
-        // Execute the SQL query
 
         if (isset($this->requestData['userID']) && $this->requestData['userID'] !== null) {
             if (!$this->profileExists($this->requestData['userID'])) {
@@ -148,30 +138,24 @@ class Profile extends Endpoint
             throw new ClientError(403, "user already exists");
         }
     }
-    //==============================================================================================
-    //==============================================================================================
 
     private function updateProfile()
     {
         $db = new Database(DB_PATH);
 
-        // Extract columns and values to update from $requestData
+        // Extract columns and values from $requestData
         $updateFields = [];
         foreach ($this->allowedParams as $param) {
             if (isset($this->requestData[$param])) {
                 $updateFields[$param] = $param;
             }
         }
-
-        // Check if there are valid parameters for update
         if (empty($updateFields)) {
             throw new ClientError(400, "No valid parameters provided for update");
         }
 
         // Construct the UPDATE query
         $sql = "UPDATE Profile SET ";
-
-        // Build the SET part of the query with column = :column placeholders
         $setClauses = array_map(
             function ($column) {
                 return "$column = :$column";
@@ -180,8 +164,6 @@ class Profile extends Endpoint
         );
 
         $sql .= implode(', ', $setClauses);
-
-        // Add the WHERE condition for the userID
         $sql .= " WHERE userID = :userID";
 
         // Prepare the SQL parameters
@@ -190,19 +172,26 @@ class Profile extends Endpoint
             $sqlParams[":$param"] = $this->requestData[$param];
         }
         $sqlParams[':userID'] = $this->requestData['userID'];
-        // Execute the SQL query
+       
         $data = $db->executeSql($sql, $sqlParams);
-        $data['message'] = 'success';
+        count($data) > 0 ? $data['message'] = 'success' : $data['message'] = 'failed';
+        return $data;
+    }
 
-        if ($data['message'] === 'success') {
-            return $data;
+    private function deleteProfile()
+    {
+        $db = new Database(DB_PATH);
+        $sql = "DELETE FROM Profile WHERE userID = :userID";
+        $sqlParams = [':userID' => $this->requestData['userID']];
+        $result = $db->executeSql($sql, $sqlParams);
+        $result['message'] = 'success';
+        if ($result['message'] === 'success') {
+            return $result;
         } else {
             throw new ClientError(500);
         }
     }
 
-    //==============================================================================================
-    //==============================================================================================
     private function profileExists($userID)
     {
         $db = new Database(DB_PATH);
@@ -216,20 +205,5 @@ class Profile extends Endpoint
             return false;
         }
         return true;
-    }
-    //==============================================================================================
-    //==============================================================================================
-    private function deleteProfile()
-    {
-        $db = new Database(DB_PATH);
-        $sql = "DELETE FROM Profile WHERE userID = :userID";
-        $sqlParams = [':userID' => $this->requestData['userID']];
-        $result = $db->executeSql($sql, $sqlParams);
-        $result['message'] = 'success';
-        if ($result['message'] === 'success') {
-            return $result;
-        } else {
-            throw new ClientError(500);
-        }
     }
 }

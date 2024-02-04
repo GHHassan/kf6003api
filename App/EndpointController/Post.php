@@ -7,14 +7,13 @@ namespace App\EndpointController;
  * 
  * This class is responsible for handling the requests to the post endpoint.
  * It can handle GET, POST, PUT and DELETE requests.
- * 
  * Parameters: should be passed as JSON in the body of the HTTP request
  * 
  * HTTP Request Methods:
- * GET:    Get a post by postID, userID and visibility both or no parameters for all posts
- * POST:   Create a new post Requires userID, username, and at least one of the optional parameters
+ * GET: Get a post by postID, userID and visibility both or no parameters for all posts
+ * POST: Create a new post Requires userID, username, and at least one of the optional parameters
  *  (textContent, location, photoPath, videoPath, visibility)
- * PUT:    Update a post Requires userID, postID, and at least one of the optional parameters 
+ * PUT: Update a post Requires userID, postID, and at least one of the optional parameters 
  * (textContent, photoPath, videoPath, visibility, username)
  * DELETE: Delete a post Requires postID
  * 
@@ -71,7 +70,7 @@ class Post extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function get()
+    private function get()
     {
         $db = new Database(DB_PATH);
 
@@ -89,9 +88,7 @@ class Post extends Endpoint
         }
 
         $data = $db->executeSQL($sql, $sqlParams);
-
-        $data['message'] = (count($data) === 0 ? "No post found" : "success");
-
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
     }
 
@@ -106,7 +103,7 @@ class Post extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function post()
+    private function post()
     {
         $postFields = $this->validateParams(['userID', 'username'], ['textContent', 'location', 'photoPath', 'videoPath', 'visibility']);
 
@@ -143,7 +140,7 @@ class Post extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function updatePost()
+    private function updatePost()
     {
         $postFields = $this->validateParams(['userID', 'postID'], ['textContent', 'photoPath', 'videoPath', 'visibility', 'username', 'location']);
 
@@ -157,7 +154,7 @@ class Post extends Endpoint
         $sqlParams = $this->buildSqlParams($postFields);
 
         $data = $this->db->executeSQL($sql, $sqlParams);
-        $data['message'] = "success";
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
     }
 
@@ -168,7 +165,7 @@ class Post extends Endpoint
      * @return array
      * @throws ClientError
      */
-    public function delete()
+    private function delete()
     {
         $this->validateRequiredParams(['postID']);
 
@@ -176,11 +173,11 @@ class Post extends Endpoint
         $sqlParams = [':postID' => $this->requestData['postID']];
 
         $data = $this->db->executeSQL($sql, $sqlParams);
-        $data['message'] = "success";
+        count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
     }
 
-    // Other methods...
+    // helper methods...
 
     private function validateParams(array $requiredParams, array $optionalParams = [])
     {

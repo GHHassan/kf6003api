@@ -63,13 +63,6 @@ class Endpoint
         // This method should be implemented by child classes
     }
 
-    // New method to send an error response
-    protected function sendErrorResponse($code, $message)
-    {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => ['code' => $code, 'message' => $message]]);
-    }
     protected function checkAllowedMethod()
     {
         if (!in_array(Request::method(), $this->allowedMethods)) {
@@ -115,6 +108,7 @@ class Endpoint
 
     protected function checkAllowedParams($params, $allowedParams = [])
     {
+        // Handle the case when a single parameter is passed
         if (!is_array($params)) {
             $params = [$params];
         }
@@ -265,15 +259,5 @@ class Endpoint
     public function setAllowedMethods($allowedMethods)
     {
         $this->allowedMethods = $allowedMethods;
-    }
-
-    public function getRequestData()
-    {
-        return $this->requestData;
-    }
-
-    public function setRequestData($requestData)
-    {
-        $this->requestData = $requestData;
     }
 }
