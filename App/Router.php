@@ -26,10 +26,6 @@ abstract class Router
                 case '/post':
                     $endpoint = new EndpointController\Post();
                     break;
-                case 'user':
-                case '/user':
-                    $endpoint = new EndpointController\User();
-                    break;
                 case 'token':
                 case '/token':
                     $endpoint = new Auth\Token();
