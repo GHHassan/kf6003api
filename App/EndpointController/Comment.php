@@ -3,7 +3,7 @@
 namespace App\EndpointController;
 
 /**
- * Class Comment updated by Hassan  to test the auto deploymeent <
+ * Class Comment updated by Hassan  to test the auto deploymeent another test <
  *
  * This class is responsible for handling the requests to the comment endpoint.
  * It can handle GET, POST, PUT, and DELETE requests for comments related to posts.
