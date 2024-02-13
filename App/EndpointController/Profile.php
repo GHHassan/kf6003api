@@ -3,7 +3,7 @@
 namespace App\EndpointController;
 
 /**
- * Profile profile update test2
+ * Profile profile update test3
  * 
  * This class is responsible for handling requests to the /profile endpoint.
  * All parameters should be passed via the http request body in JSON format.
