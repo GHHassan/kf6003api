@@ -63,9 +63,9 @@ class Endpoint
         // This method should be implemented by child classes
     }
 
-    protected function checkAllowedMethod()
+    protected function checkAllowedMethod($methods, $allowedMethods =[])
     {
-        if (!in_array(Request::method(), $this->allowedMethods)) {
+        if (!in_array(Request::method(), $allowedMethods)) {
             throw new ClientError(405);
         }
     }
