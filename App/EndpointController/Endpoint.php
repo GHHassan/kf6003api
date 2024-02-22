@@ -34,12 +34,7 @@ class Endpoint
     private $sqlParams;
     private $data;
     private $db;
-    private $allowedMethods = [
-        'GET',
-        'POST',
-        'PUT',
-        'DELETE'
-    ];
+    private $allowedMethods = ['GET'];
     private $userID;
     protected $requestData;
     private $allowedParams = [];
@@ -50,11 +45,9 @@ class Endpoint
     }
     protected function handleRequest()
     {
-        $this->checkAllowedMethod();
         $this->setProperties();
         $this->initialiseSQL();
         $this->performAction();
-
     }
 
     // New method to perform the specific action for the endpoint
@@ -149,7 +142,7 @@ class Endpoint
 
     protected function checkCredentials()
     {
-        $sql = "SELECT id , password FROM account WHERE email = :email";
+        $sql = "SELECT userID , password_hash FROM users WHERE email = :email";
         $dbConn = new Database(DB_USER_PATH);
         if (!isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])) {
             throw new ClientError(401, "Username or password is missing");
@@ -166,10 +159,10 @@ class Endpoint
         if (count($data) > 1) {
             throw new ClientError(500, "Please contact your admin");
         }
-        if (!password_verify($_SERVER['PHP_AUTH_PW'], $data[0]['password'])) {
+        if (!password_verify($_SERVER['PHP_AUTH_PW'], $data[0]['password_hash'])) {
             throw new ClientError(401, "Username or password is incorrect");
         }
-        return $data[0]['id'];
+        return $data[0]['userID'];
     }
     protected function getBearerToken()
     {

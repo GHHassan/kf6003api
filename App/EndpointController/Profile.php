@@ -3,7 +3,7 @@
 namespace App\EndpointController;
 
 /**
- * Profile profile update test312
+ * Profile
  * 
  * This class is responsible for handling requests to the /profile endpoint.
  * All parameters should be passed via the http request body in JSON format.
@@ -89,11 +89,11 @@ class Profile extends Endpoint
 
     private function getUserProfile()
     {
-        if(!isset($this->requestData['userID'])) {
+        if(!isset($_GET['userID'])) {
             throw new ClientError(422, "userID is required");
         }
         $sql = "SELECT * FROM Profile WHERE userID = :userID";
-        $sqlParams = [':userID' => $this->requestData['userID']];
+        $sqlParams = [':userID' => $_GET['userID']];
         $result = $this->db->executeSql($sql, $sqlParams);
 
         count($result) > 0 ? $result['message'] = 'success' : $result['message'] = 'not found'; 
@@ -103,15 +103,14 @@ class Profile extends Endpoint
     private function createProfile()
     {
         $db = new Database(DB_PATH);
+        $this->setProperties();
         $requiredParams = [
             'userID',
-            'username',
             'firstName',
             'lastName',
             'dateOfBirth',
             'email'
         ];
-
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
                 throw new ClientError(422, "One or more required parameters are missing.");
@@ -142,7 +141,7 @@ class Profile extends Endpoint
     private function updateProfile()
     {
         $db = new Database(DB_PATH);
-
+        $this->setProperties();
         // Extract columns and values from $requestData
         $updateFields = [];
         foreach ($this->allowedParams as $param) {
@@ -181,15 +180,14 @@ class Profile extends Endpoint
     private function deleteProfile()
     {
         $db = new Database(DB_PATH);
-        $sql = "DELETE FROM Profile WHERE userID = :userID";
-        $sqlParams = [':userID' => $this->requestData['userID']];
-        $result = $db->executeSql($sql, $sqlParams);
-        $result['message'] = 'success';
-        if ($result['message'] === 'success') {
-            return $result;
-        } else {
-            throw new ClientError(500);
+        if(!isset($_GET['userID'])) {
+            throw new ClientError(422, "userID is required");
         }
+        $sql = "DELETE FROM Profile WHERE userID = :userID";
+        $sqlParams = [':userID' => $_GET['userID']];
+        $result = $db->executeSql($sql, $sqlParams);
+        count($result) > 0 ? $result['message'] = 'success' : $result['message'] = 'failed';
+        return $result;
     }
 
     private function profileExists($userID)
