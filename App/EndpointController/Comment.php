@@ -33,6 +33,7 @@ class Comment extends Endpoint
     private $userID;
     private $commentContent;
     protected $requestData;
+    private $data;
 
     private $allowedParams = [
         'commentContent',
@@ -50,24 +51,28 @@ class Comment extends Endpoint
     public function __construct()
     {
         $this->db = new Database(DB_PATH);
+        $this->handleRequest();        
+        parent::__construct($this->data);
+    }
+
+    protected function performAction()
+    {
         $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
-        $this->setProperties();
-        $data = [];
+    
         switch (Request::method()) {
             case 'GET':
-                $data = $this->get();
+                $this->data = $this->get();
                 break;
             case 'POST':
-                $data = $this->post();
+                $this->data = $this->post();
                 break;
             case 'PUT':
-                $data = $this->updateComment();
+                $this->data = $this->updateComment();
                 break;
             case 'DELETE':
-                $data = $this->delete();
+                $this->data = $this->delete();
                 break;
         }
-        parent::__construct($data);
     }
 
     /**

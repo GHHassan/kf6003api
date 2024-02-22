@@ -31,8 +31,19 @@ use App\{
 class Post extends Endpoint
 {
     private $db;
-    private $allowedParams = ['textContent', 'photoPath', 'videoPath', 'visibility', 'location', 'postID', 'userID', 'username'];
-    private $allowedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
+    private $data;
+    private $allowedParams = [
+        'textContent',
+        'photoPath',
+        'videoPath',
+        'visibility',
+        'location',
+        'postID',
+        'userID',
+        'firstName',
+        'lastName'
+    ];
+    private $allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
 
     public function __construct()
     {
@@ -42,8 +53,8 @@ class Post extends Endpoint
 
     protected function performAction()
     {
-        $data = $this->executeAction(Request::method());
-        parent::__construct($data);
+        $this->data = $this->executeAction(Request::method());
+        parent::__construct($this->data);
     }
 
     private function executeAction($method)
@@ -64,8 +75,8 @@ class Post extends Endpoint
 
     /**
      * This method is responsible for handling GET requests to the post endpoint.
-     * It can handle GET requests with optional postID, userID and visibility, both,
-     * or no parameters for all posts with public visibility.
+     * It can handle GET requests with optional postID, userID and visibility parameters.
+     * No parameters returns all posts with public visibility.
      *
      * @return array
      * @throws ClientError
@@ -74,9 +85,11 @@ class Post extends Endpoint
     {
         $db = new Database(DB_PATH);
 
-        !empty($this->requesData) ?? $postFields = $this->validateParams([],['postID', 'userID', 'visibility']);
+        !empty($this->requesData) ?? $postFields = $this->validateParams([], ['postID', 'userID', 'visibility']);
 
-        $sql = "SELECT * FROM post WHERE visibility = 'public'";
+        $sql = "SELECT Post.*, Profile.profilePicturePath FROM post
+        JOIN profile ON Post.userID = Profile.userID
+        WHERE visibility = 'public'";
         $sqlParams = [];
 
         if (!empty($postFields)) {
@@ -105,8 +118,10 @@ class Post extends Endpoint
      */
     private function post()
     {
-        $postFields = $this->validateParams(['userID', 'username'], ['textContent', 'location', 'photoPath', 'videoPath', 'visibility']);
-
+        $this->setProperties();
+        $requiredParams = ['userID', 'firstName', 'lastName'];
+        $optionalParams = ['textContent', 'location', 'photoPath', 'videoPath', 'visibility'];
+        $postFields = $this->validateParams( $requiredParams, $optionalParams);
         $defaultValues = [
             'textContent' => null,
             'location' => null,
@@ -117,7 +132,6 @@ class Post extends Endpoint
 
         $postParams = array_merge($defaultValues, $this->requestData);
         $postParams['visibility'] = $postParams['visibility'] ?? 'friends';
-
         $validParams = array_intersect_key($postParams, array_flip($postFields));
 
         $placeholders = implode(', ', array_map(function ($param) {
@@ -125,7 +139,6 @@ class Post extends Endpoint
         }, array_keys($validParams)));
 
         $sql = "INSERT INTO post (" . implode(', ', array_keys($validParams)) . ") VALUES ($placeholders)";
-
         $data = $this->db->executeSQL($sql, $validParams);
         count($data) > 0 ? $data['message'] = "success" : $data['message'] = "failed";
         return $data;
@@ -142,7 +155,16 @@ class Post extends Endpoint
      */
     private function updatePost()
     {
-        $postFields = $this->validateParams(['userID', 'postID'], ['textContent', 'photoPath', 'videoPath', 'visibility', 'username', 'location']);
+        $postFields = $this->validateParams([
+            'userID',
+            'postID'
+        ], [
+            'textContent',
+            'photoPath',
+            'videoPath',
+            'visibility',
+            'location'
+        ]);
 
         $setClauses = array_map(function ($column) {
             return "$column = :$column";
@@ -182,15 +204,14 @@ class Post extends Endpoint
     private function validateParams(array $requiredParams, array $optionalParams = [])
     {
         $providedOptionalParams = array_intersect($optionalParams, array_keys($this->requestData));
-
         if (empty($providedOptionalParams)) {
             throw new ClientError(422, "At least one of the optional parameters ("
                 . json_encode($optionalParams) . ") is required");
         }
-
+        
         $allParams = array_merge($requiredParams, $optionalParams);
         $providedPropertyKeys = array_intersect($this->allowedParams, array_keys($this->requestData));
-
+        
         if (empty($providedPropertyKeys)) {
             throw new ClientError(422, "At least one property of the post is required");
         }
@@ -213,7 +234,6 @@ class Post extends Endpoint
                 $sqlParams[":$property"] = $this->requestData[$property];
             }
         }
-
         return $sqlParams;
     }
 
