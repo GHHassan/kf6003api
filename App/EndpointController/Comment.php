@@ -50,8 +50,8 @@ class Comment extends Endpoint
     public function __construct()
     {
         $this->db = new Database(DB_PATH);
+        $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
         $this->setProperties();
-        $this->checkAllowedMethod();
         $data = [];
         switch (Request::method()) {
             case 'GET':
@@ -125,6 +125,7 @@ class Comment extends Endpoint
      */
     private function post()
     {
+        echo json_encode($this->requestData);
         $requiredParams = ['postID', 'userID', 'username', 'commentContent'];
         foreach ($requiredParams as $param) {
             if (!isset($this->requestData[$param])) {
