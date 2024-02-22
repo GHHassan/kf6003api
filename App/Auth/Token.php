@@ -24,13 +24,13 @@ use App\Request;
 
 class Token extends \App\EndpointController\Endpoint 
 {
-    private $allowedParams = ['GET','POST'];
+    private $allowedMethods = ['GET','POST'];
     private $sqlParams = [];
     private $data = [];
 
     public function __construct() {
         $this->checkAllowedParams(Request::params(), $this->allowedParams);
-        $this->checkAllowedMethod();
+        $this->checkAllowedMethod(Request::method(), $this->allowedMethods);
         $id = $this->checkCredentials();
         $data['token'] = $this->generateJWT($id);
         $data['message'] = 'success';

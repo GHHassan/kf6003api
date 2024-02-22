@@ -63,7 +63,7 @@ class Upload extends Endpoint
         $allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif']; // Add more image MIME types if needed
         try {
             $this->validateFileType($uploadedFile, $allowedImageTypes);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return ['message' => $e->getMessage()];
         }
 
@@ -111,7 +111,7 @@ class Upload extends Endpoint
         $allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif']; // Add more image MIME types if needed
         try {
             $this->validateFileType($uploadedFile, $allowedImageTypes);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return ['message' => $e->getMessage()];
         }
 
