@@ -14,7 +14,7 @@ namespace App;
 abstract class Router
 {
     public static function routeRequest()
-    {
+    {        
         try {
             switch (strtolower(Request::endpointName())) {
                 case '/':
@@ -54,6 +54,13 @@ abstract class Router
                 case '/comment':
                     $endpoint = new EndpointController\Comment();
                     break;
+                case 'upload':
+                case '/upload':
+                    $endpoint = new EndpointController\Upload();
+                    break;
+                case 'server':
+                case '/server':
+                    return new WebSocket\WebSocketServer();
                 default:
                     throw new ClientError(404, 'check your url and try again');
             }
