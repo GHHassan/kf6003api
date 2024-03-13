@@ -35,7 +35,7 @@ class Ssouser extends Endpoint
     }
 
     /** retrieves data from body params of httpRequest */
-    private function getData() {
+    public function getData() {
         $data = (new Requesthandler())->getData();
         return $data;
     }

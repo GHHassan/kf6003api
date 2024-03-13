@@ -37,14 +37,19 @@ class Token extends \App\EndpointController\Endpoint
         parent::__construct($data);
     }
 
-    private function generateJWT($id) {
+    private function generateJWT($token) {
         $secretKey = SECRET;
+        $id = $token['userID'];
+        $username = $token['username'];
         $iat = time();
         $iss = $_SERVER['HTTP_HOST'];
+        $email = $_SERVER['PHP_AUTH_USER'];
         $payload = [
             'sub' => $id,
+            'email' => $email,
+            'username' => $username,
             'iat' => $iat,
-            'exp' => $iat + 3600,
+            'exp' => $iat + (3600 * 6),
             'iss' => $iss
         ];
         $jwt = JWT::encode($payload, $secretKey, 'HS256');
