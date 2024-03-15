@@ -44,10 +44,11 @@ class Ssouser extends Endpoint
         $data = $this->getData();
         switch($data['type']){
             case "user.created":
-                $sql = "INSERT INTO users (userID, email, password_hash) VALUES (:userID, :email, :password_hash)";
+                $sql = "INSERT INTO users (userID, username, email, password_hash) VALUES (:userID, :username, :email, :password_hash)";
                 $username = $data['username'] ?? $data['data']['first_name'] . $data['data']['last_name'];  
                 $this->sqlParams = [
                     ':userID' => $data['data']['id'],
+                    ':username' => $username,
                     ':email' => $data['data']['email_addresses'][0]['email_address'],
                     ':password_hash' => 'SSO',
                 ];
@@ -56,11 +57,11 @@ class Ssouser extends Endpoint
                 $this->setData($data);
                 break;
             case "user.updated":
-                $sql = "UPDATE users SET email = :email, password_hash = :password_hash WHERE userID = :userID";
+                $sql = "UPDATE users SET email = :email, username = :username, password_hash = :password_hash WHERE userID = :userID";
                 $this->sqlParams = [
                     ':userID' => $data['data']['primary_email_address_id'],
-                    ':email' => $data['data']['email_addresses']['email_address'],
                     ':username' => $data['data']['first_name'] . $data['data']['last_name'],
+                    ':email' => $data['data']['email_addresses']['email_address'],
                     ':password_hash' => 'SSO',
                 ];
                 $data = $this->db->executeSql($sql, $this->sqlParams);
